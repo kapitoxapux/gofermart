@@ -169,7 +169,7 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
-		service.Logger(fmt.Sprintf("%s Code - %d", err.Error(), http.StatusInternalServerError))
+		// service.Logger(fmt.Sprintf("%s Code - %d", err.Error(), http.StatusInternalServerError))
 		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
 		// logger will be here
@@ -179,7 +179,7 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 
 	form := new(LoginForm)
 	if err := json.Unmarshal(b, &form); err != nil {
-		service.Logger(fmt.Sprintf("%s Code - %d", err.Error(), http.StatusBadRequest))
+		// service.Logger(fmt.Sprintf("%s Code - %d", err.Error(), http.StatusBadRequest))
 		http.Error(res, err.Error(), http.StatusBadRequest) // 400 response
 
 		// logger will be here
@@ -188,7 +188,7 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if model := h.storage.Repo.UserRegistered(form.Login); model.ID != 0 {
-		service.Logger(fmt.Sprintf("Login already exist! %d", http.StatusConflict))
+		// service.Logger(fmt.Sprintf("Login already exist! %d", http.StatusConflict))
 		http.Error(res, "Login already exist!", http.StatusConflict) // 409 response
 
 		return
@@ -202,7 +202,7 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 	user.CreatedAt = time.Now()
 	if err := h.storage.Repo.RegisterUser(&user); err != nil {
 		errMessage := fmt.Sprintf("Model saving repository failed %s", err.Error())
-		service.Logger(fmt.Sprintf("%s Code - %d", errMessage, http.StatusConflict))
+		// service.Logger(fmt.Sprintf("%s Code - %d", errMessage, http.StatusConflict))
 		http.Error(res, errMessage, http.StatusConflict) // 409 response
 
 		return
@@ -218,7 +218,7 @@ func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
-		service.Logger(fmt.Sprint(err.Error()))
+		// service.Logger(fmt.Sprint(err.Error()))
 		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
 		return
@@ -226,7 +226,7 @@ func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 
 	form := new(LoginForm)
 	if err := json.Unmarshal(b, &form); err != nil {
-		service.Logger(fmt.Sprint(err.Error()))
+		// service.Logger(fmt.Sprint(err.Error()))
 		http.Error(res, err.Error(), http.StatusBadRequest) // 400 response
 
 		return
@@ -245,7 +245,7 @@ func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.WriteHeader(http.StatusOK)
 	} else {
-		service.Logger(fmt.Sprintf("Wrong login/password! %d", http.StatusUnauthorized))
+		// service.Logger(fmt.Sprintf("Wrong login/password! %d", http.StatusUnauthorized))
 		http.Error(res, "Wrong login/password!", http.StatusUnauthorized) // 401 response
 
 		return
@@ -286,12 +286,12 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if order := h.storage.Repo.GetOrder(luhn); order.ID != 0 {
 		if order.UserID == user.ID {
-			service.Logger(fmt.Sprintf("Order already uploaded! Code - %d", http.StatusOK))
+			// service.Logger(fmt.Sprintf("Order already uploaded! Code - %d", http.StatusOK))
 			http.Error(res, "Order already uploaded!", http.StatusOK) // 200 response
 
 			return
 		} else {
-			service.Logger(fmt.Sprintf("Order already uploaded by another user! Code - %d", http.StatusConflict))
+			// service.Logger(fmt.Sprintf("Order already uploaded by another user! Code - %d", http.StatusConflict))
 			http.Error(res, "Order already uploaded by another user!", http.StatusConflict) // 409 response
 
 			return
@@ -315,7 +315,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 	cookie, _ := req.Cookie("user")
 	if cookie == nil {
-		service.Logger(fmt.Sprintf("Unauthorized! Code - %d", http.StatusUnauthorized))
+		// service.Logger(fmt.Sprintf("Unauthorized! Code - %d", http.StatusUnauthorized))
 		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
 
 		return
@@ -323,7 +323,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
-		service.Logger(fmt.Sprintf("User not founded! Code - %d", http.StatusInternalServerError))
+		// service.Logger(fmt.Sprintf("User not founded! Code - %d", http.StatusInternalServerError))
 		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
 
 		return
@@ -340,7 +340,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 		orders = append(orders, *order)
 	}
 	if len(orders) == 0 {
-		service.Logger(fmt.Sprintf("No data! Code - %d", http.StatusNoContent))
+		// service.Logger(fmt.Sprintf("No data! Code - %d", http.StatusNoContent))
 		http.Error(res, "No data!", http.StatusNoContent) // 204 response
 
 		return
