@@ -300,7 +300,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 		order := models.Order{}
 		order.UserID = user.ID
 		order.OrderNumber = luhn
-		order.Status = "New"
+		order.Status = "NEW"
 		order.Accrual = 0
 		order.CreatedAt = time.Now()
 		order.UpdatedAt = time.Now()
