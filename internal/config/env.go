@@ -8,7 +8,7 @@ import (
 type Config struct {
 	ServerAddress  string `env:"RUN_ADDRESS"`
 	AccrualAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
-	DbAddress      string `env:"DATABASE_URI"`
+	DBAddress      string `env:"DATABASE_URI"`
 }
 
 var ServerConfig Config
@@ -33,9 +33,9 @@ func SetConfig() Config {
 	}
 
 	if dbAddress := os.Getenv("DATABASE_URI"); dbAddress == "" {
-		ServerConfig.DbAddress = *db
+		ServerConfig.DBAddress = *db
 	} else {
-		ServerConfig.DbAddress = dbAddress
+		ServerConfig.DBAddress = dbAddress
 	}
 
 	return ServerConfig
@@ -51,9 +51,9 @@ func GetConfigAccrualAddress() string {
 	return ServerConfig.AccrualAddress
 }
 
-func GetConfigDbAddress() string {
+func GetConfigDBAddress() string {
 
-	return ServerConfig.DbAddress
+	return ServerConfig.DBAddress
 }
 
 func GetConfigPath() string {

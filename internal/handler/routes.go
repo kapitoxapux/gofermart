@@ -88,7 +88,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 }
 
 func ConnectionDBCheck() (int, string) {
-	db, err := sql.Open("pgx", config.GetConfigDbAddress())
+	db, err := sql.Open("pgx", config.GetConfigDBAddress())
 	if err != nil {
 
 		return 500, err.Error()
@@ -285,7 +285,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 	}
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if order := h.storage.Repo.GetOrder(luhn); order.ID != 0 {
-		if order.UserId == user.ID {
+		if order.UserID == user.ID {
 			service.Logger(fmt.Sprintf("Order already uploaded! Code - %d", http.StatusOK))
 			http.Error(res, "Order already uploaded!", http.StatusOK) // 200 response
 
@@ -298,7 +298,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 		}
 	} else {
 		order := models.Order{}
-		order.UserId = user.ID
+		order.UserID = user.ID
 		order.OrderNumber = luhn
 		order.Status = "New"
 		order.Accrual = 0
@@ -451,8 +451,8 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	balance := models.Balance{}
-	balance.UserId = user.ID
-	balance.OrderId = luhn
+	balance.UserID = user.ID
+	balance.OrderID = luhn
 	balance.Withdraw = withdraw.Sum
 	balance.CreatedAt = time.Now()
 	balance.UpdatedAt = time.Now()
@@ -487,7 +487,7 @@ func (h *Handler) WithdrawalsAction(res http.ResponseWriter, req *http.Request) 
 	list := h.storage.Repo.GetWithdraws(user.ID)
 	for _, obj := range list {
 		processed := new(Processed)
-		processed.Order = strconv.Itoa(obj.OrderId)
+		processed.Order = strconv.Itoa(obj.OrderID)
 		processed.Sum = obj.Withdraw
 		processed.UploadAt = obj.UpdatedAt.Format(time.RFC3339)
 		processes = append(processes, *processed)

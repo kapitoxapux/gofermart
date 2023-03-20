@@ -33,7 +33,7 @@ type DB struct {
 }
 
 func NewDB() *DB {
-	repo := NewRepository(config.GetConfigDbAddress())
+	repo := NewRepository(config.GetConfigDBAddress())
 
 	return &DB{
 		Repo: repo,
