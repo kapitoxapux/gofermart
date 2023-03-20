@@ -18,13 +18,13 @@ import (
 type App struct {
 	httpServer *http.Server
 	storage    *storage.DB
-	channel    *service.Channel
+	// channel    *service.Channel
 }
 
 func NewApp() *App {
 	config.SetConfig()
-	InputCh := make(chan int)
-	listener := service.NewListener(InputCh)
+	// InputCh := make(chan int)
+	// listener := service.NewListener(InputCh)
 
 	if status, _ := handler.ConnectionDBCheck(); status != http.StatusOK {
 
@@ -33,11 +33,11 @@ func NewApp() *App {
 
 	return &App{
 		storage: storage.NewDB(),
-		channel: listener,
+		// channel: listener,
 	}
 }
 
-func registerHTTPEndpoints(router *chi.Mux, storage storage.DB, service service.Channel) {
+func registerHTTPEndpoints(router *chi.Mux, storage storage.DB) {
 	h := handler.NewHandler(storage)
 
 	router.Route("/api", func(r chi.Router) {
@@ -56,25 +56,28 @@ func registerHTTPEndpoints(router *chi.Mux, storage storage.DB, service service.
 			r.Get("/withdrawals", h.WithdrawalsAction)
 		})
 
-		r.Route("/orders", func(r chi.Router) {
-			r.Route("/{number}", func(r chi.Router) {
-				r.Get("/", h.AccrualAction)
-			})
-		})
+		// r.Route("/orders", func(r chi.Router) {
+		// 	r.Route("/{number}", func(r chi.Router) {
+		// 		r.Get("/", h.AccrualAction)
+		// 	})
+		// })
 	})
 }
 
 func (a *App) Run(ctx context.Context) error {
 	route := chi.NewRouter()
 	address := config.GetConfigServerAddress()
-	registerHTTPEndpoints(route, *a.storage, *a.channel)
+	registerHTTPEndpoints(route, *a.storage)
 
 	a.httpServer = &http.Server{
 		Addr:    address,
 		Handler: route,
 	}
 
-	// go service.AccrualService(a.channel.InputChannel)
+	ticker := time.NewTicker(2 * time.Second)
+	tickerChan := make(chan bool)
+
+	go service.AccrualService(a.storage, ticker, tickerChan)
 
 	go func() {
 		if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -89,9 +92,10 @@ func (a *App) Run(ctx context.Context) error {
 	defer shutdown()
 
 	quit := make(chan struct{}, 1)
-
 	go func() {
 		time.Sleep(3 * time.Second)
+		ticker.Stop()
+		tickerChan <- true
 		quit <- struct{}{}
 	}()
 

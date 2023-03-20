@@ -21,6 +21,7 @@ type Repository interface {
 	SetWithdraw(*models.Balance) error
 	GetWithdraws(id uint64) []models.Balance
 	SetAccrual(id int, status string, accrual float64) error
+	GetOrdersByStatus() []models.Order
 }
 
 type repository struct {
@@ -146,4 +147,11 @@ func (r *repository) SetAccrual(id int, status string, accrual float64) error {
 	r.db.Save(&order)
 
 	return nil
+}
+
+func (r *repository) GetOrdersByStatus() []models.Order {
+	orders := []models.Order{}
+	r.db.Where("status = ?", "NEW").Where("status = ?", "REGISTERED").Where("status = ?", "PROCESSING").Find(&orders)
+
+	return orders
 }

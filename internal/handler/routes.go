@@ -19,7 +19,7 @@ import (
 
 type Handler struct {
 	storage storage.DB
-	channel service.Channel
+	// channel service.Channel
 }
 
 func NewHandler(storage storage.DB) *Handler { //service service.Service, channel service.Channel
@@ -164,38 +164,12 @@ func AuthMiddleware(h http.Handler) http.Handler {
 	)
 }
 
-func (h *Handler) AccrualAction(res http.ResponseWriter, req *http.Request) {
-
-	defer req.Body.Close()
-	b, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-
-		// logger will be here
-
-		return
-	}
-
-	accrual := service.Accrual{}
-	if err := json.Unmarshal(b, &accrual); err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-
-		// logger will be here
-
-		return
-
-	}
-
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	res.WriteHeader(http.StatusOK) // 200 response
-	res.Write([]byte(b))
-}
-
 func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
+		service.Logger(fmt.Sprintf("%s Code - %d", err.Error(), http.StatusInternalServerError))
 		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
 		// logger will be here
@@ -205,6 +179,7 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 
 	form := new(LoginForm)
 	if err := json.Unmarshal(b, &form); err != nil {
+		service.Logger(fmt.Sprintf("%s Code - %d", err.Error(), http.StatusBadRequest))
 		http.Error(res, err.Error(), http.StatusBadRequest) // 400 response
 
 		// logger will be here
@@ -213,9 +188,8 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if model := h.storage.Repo.UserRegistered(form.Login); model.ID != 0 {
+		service.Logger(fmt.Sprintf("Login already exist! %d", http.StatusConflict))
 		http.Error(res, "Login already exist!", http.StatusConflict) // 409 response
-
-		// logger will be here
 
 		return
 	}
@@ -228,9 +202,8 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 	user.CreatedAt = time.Now()
 	if err := h.storage.Repo.RegisterUser(&user); err != nil {
 		errMessage := fmt.Sprintf("Model saving repository failed %s", err.Error())
+		service.Logger(fmt.Sprintf("%s Code - %d", errMessage, http.StatusConflict))
 		http.Error(res, errMessage, http.StatusConflict) // 409 response
-
-		// logger will be here
 
 		return
 	}
@@ -245,18 +218,16 @@ func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
+		service.Logger(fmt.Sprint(err.Error()))
 		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
-
-		// logger will be here
 
 		return
 	}
 
 	form := new(LoginForm)
 	if err := json.Unmarshal(b, &form); err != nil {
+		service.Logger(fmt.Sprint(err.Error()))
 		http.Error(res, err.Error(), http.StatusBadRequest) // 400 response
-
-		// logger will be here
 
 		return
 	}
@@ -274,9 +245,8 @@ func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.WriteHeader(http.StatusOK)
 	} else {
+		service.Logger(fmt.Sprintf("Wrong login/password! %d", http.StatusUnauthorized))
 		http.Error(res, "Wrong login/password!", http.StatusUnauthorized) // 401 response
-
-		// logger will be here
 
 		return
 	}
@@ -316,15 +286,13 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if order := h.storage.Repo.GetOrder(luhn); order.ID != 0 {
 		if order.UserId == user.ID {
+			service.Logger(fmt.Sprintf("Order already uploaded! Code - %d", http.StatusOK))
 			http.Error(res, "Order already uploaded!", http.StatusOK) // 200 response
-
-			// logger will be here
 
 			return
 		} else {
+			service.Logger(fmt.Sprintf("Order already uploaded by another user! Code - %d", http.StatusConflict))
 			http.Error(res, "Order already uploaded by another user!", http.StatusConflict) // 409 response
-
-			// logger will be here
 
 			return
 		}
@@ -338,7 +306,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 		order.UpdatedAt = time.Now()
 
 		h.storage.Repo.SetOrder(&order)
-		h.channel.InputChannel <- luhn
+		// h.channel.InputChannel <- luhn
 
 		res.WriteHeader(http.StatusAccepted) // 202 response
 	}
@@ -347,18 +315,16 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 	cookie, _ := req.Cookie("user")
 	if cookie == nil {
+		service.Logger(fmt.Sprintf("Unauthorized! Code - %d", http.StatusUnauthorized))
 		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
-
-		// logger will be here
 
 		return
 	}
 
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
+		service.Logger(fmt.Sprintf("User not founded! Code - %d", http.StatusInternalServerError))
 		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
-
-		// logger will be here
 
 		return
 	}
@@ -374,9 +340,8 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 		orders = append(orders, *order)
 	}
 	if len(orders) == 0 {
+		service.Logger(fmt.Sprintf("No data! Code - %d", http.StatusNoContent))
 		http.Error(res, "No data!", http.StatusNoContent) // 204 response
-
-		// logger will be here
 
 		return
 	}

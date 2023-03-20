@@ -55,3 +55,8 @@ func GetConfigDbAddress() string {
 
 	return ServerConfig.DbAddress
 }
+
+func GetConfigPath() string {
+
+	return "logger.txt"
+}

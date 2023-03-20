@@ -1,30 +1,27 @@
 package service
 
 import (
+	"bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
 	"encoding/hex"
-
-	// "encoding/json"
-	// "fmt"
-	// "gofermart/internal/config"
-	// "io"
-	// "log"
-	// "strconv"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
-	"sync"
+	"os"
+	"strconv"
 	"time"
+
+	"gofermart/internal/config"
+	"gofermart/internal/storage"
 )
 
 type User struct {
 	Login    string `json:"longURL"`
 	Password string `json:"shortURL"`
 	Sign     []byte `json:"sign"`
-}
-
-type Channel struct {
-	InputChannel chan int
 }
 
 type Accrual struct {
@@ -40,13 +37,6 @@ func NewUser() User {
 	user.Password = ""
 
 	return user
-}
-
-func NewListener(inputCh chan int) *Channel {
-
-	return &Channel{
-		InputChannel: inputCh,
-	}
 }
 
 func SetUserCookie(req *http.Request, data string) *http.Cookie {
@@ -95,120 +85,95 @@ func checksum(number int) int {
 	return luhn % 10
 }
 
-func FanOut(inputCh chan int, n int) []chan int {
-	chs := make([]chan int, 0, n)
-	for i := 0; i < n; i++ {
-		ch := make(chan int)
-		chs = append(chs, ch)
+type saver struct {
+	file   *os.File
+	writer *bufio.Writer
+}
+
+func (p *saver) Close() error {
+
+	return p.file.Close()
+}
+
+func NewSaver(filename string) (*saver, error) {
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND, 0777)
+	if err != nil {
+
+		return nil, err
 	}
 
-	go func() {
-		defer func(chs []chan int) {
-			for _, ch := range chs {
-				close(ch)
-			}
-		}(chs)
-
-		for i := 0; ; i++ {
-			if i == len(chs) {
-				i = 0
-			}
-
-			list, ok := <-inputCh
-			if !ok {
-				return
-			}
-			ch := chs[i]
-			ch <- list
-		}
-	}()
-
-	return chs
+	return &saver{
+		file:   file,
+		writer: bufio.NewWriter(file),
+	}, nil
 }
 
-func FanIn(inputChs ...chan int) chan int {
-	outCh := make(chan int)
-	go func() {
-		wg := &sync.WaitGroup{}
-		for _, inputCh := range inputChs {
-			wg.Add(1)
-			go func(inputCh chan int) {
-				defer wg.Done()
-				for order := range inputCh {
-					outCh <- order
+func (p *saver) WriteShort(text string) error {
+	json, err := json.Marshal(text)
+	if err != nil {
+
+		return err
+	}
+	if _, err := p.writer.Write(json); err != nil {
+
+		return err
+	}
+	if err := p.writer.WriteByte('\n'); err != nil {
+
+		return err
+	}
+
+	return p.writer.Flush()
+}
+
+var pathStorage = config.GetConfigPath()
+
+func Logger(text string) {
+	saver, _ := NewSaver(pathStorage)
+	defer saver.Close()
+
+	_ = saver.WriteShort(text)
+}
+
+func AccrualService(storage *storage.DB, ticker *time.Ticker, tickerChan chan bool) {
+	// saver, _ := NewSaver(pathStorage)
+	// defer saver.Close()
+
+	// _ = saver.WriteShort("in")
+	for {
+		select {
+		case <-tickerChan:
+
+			return
+		case <-ticker.C:
+			// Logger("in")
+
+			orders := storage.Repo.GetOrdersByStatus()
+			for _, order := range orders {
+				accrualURL := fmt.Sprintf("http://%s/api/orders/%d", config.GetConfigServerAddress(), order.OrderNumber)
+				response, err := http.Get(accrualURL)
+				if err != nil {
+					Logger(fmt.Sprintf("Client could not create request: %s", err.Error()))
 				}
-			}(inputCh)
+				defer response.Body.Close()
+				b, err := io.ReadAll(response.Body)
+				if err != nil {
+					Logger(err.Error())
+				}
+				accrual := Accrual{}
+				if err := json.Unmarshal(b, &accrual); err != nil {
+					Logger(err.Error())
+				}
+				luhn, _ := strconv.Atoi(accrual.Order)
+				if order := storage.Repo.GetOrder(luhn); order.ID != 0 {
+					if order.Status != accrual.Status {
+						storage.Repo.SetAccrual(luhn, accrual.Status, accrual.Accrual)
+					}
+
+				}
+
+			}
+
 		}
-		wg.Wait()
-		close(outCh)
-	}()
-
-	return outCh
-}
-
-func NewWorker(input, out chan int) {
-	go func() {
-		for shorter := range input {
-
-			// some checks maybe?
-
-			out <- shorter
-		}
-		close(out)
-	}()
-}
-
-func AccrualService(inputCh chan int) {
-	// workersCount := 2
-	// workerChs := make([]chan int, 0, workersCount)
-	// fanOutChs := FanOut(inputCh, workersCount)
-	// for _, fanOutCh := range fanOutChs {
-	// 	workerCh := make(chan int)
-	// 	NewWorker(fanOutCh, workerCh)
-	// 	workerChs = append(workerChs, workerCh)
-	// }
-	// for id := range FanIn(workerChs...) {
-	// 	accrualURL := fmt.Sprintf("http://%s/api/orders/%d", config.GetConfigServerAddress(), id)
-	// 	response, err := http.Get(accrualURL)
-	// 	if err != nil {
-	// 		log.Println("Client could not create request: ", err)
-
-	// 		// logger will be here
-
-	// 	}
-	// 	defer response.Body.Close()
-	// 	b, err := io.ReadAll(response.Body)
-	// 	if err != nil {
-
-	// 		// logger will be here
-
-	// 		return
-	// 	}
-
-	// 	accrual := Accrual{}
-	// 	if err := json.Unmarshal(b, &accrual); err != nil {
-	// 		// http.Error(res, err.Error(), http.StatusInternalServerError)
-
-	// 		// logger will be here
-
-	// 		return
-
-	// 	}
-
-	// 	luhn, _ := strconv.Atoi(accrual.Order)
-	// 	if order := h.storage.Repo.GetOrder(luhn); order.ID != 0 {
-	// 		if order.Status != accrual.Status {
-	// 			h.storage.Repo.SetAccrual(luhn, accrual.Status, accrual.Accrual)
-	// 		}
-
-	// 	} else {
-
-	// 		// logger will be here
-
-	// 		return
-	// 	}
-
-	// 	log.Println(response)
-	// }
-
+	}
 }
