@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+
+	// "log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -396,12 +397,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Println(luhn)
-	order := h.storage.Repo.GetOrder(luhn)
-	log.Println(order.ID)
-	if order.ID != 0 {
-		log.Println("in1")
-		log.Println(luhn)
+	if order := h.storage.Repo.GetOrder(luhn); order.ID != 0 {
 		if order.Accrual < withdraw.Sum {
 			http.Error(res, "Not enouth balance!", http.StatusPaymentRequired) // 402 response
 
@@ -409,13 +405,6 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 
 			return
 		}
-	} else {
-		log.Println("in2")
-		http.Error(res, "Order not founded!", http.StatusInternalServerError) // 500 response
-
-		// logger will be here
-
-		return
 	}
 
 	user := h.storage.Repo.GetUser(cookie.Value)
