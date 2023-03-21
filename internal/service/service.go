@@ -1,18 +1,14 @@
 package service
 
 import (
-	"bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
-	// "io"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -87,94 +83,25 @@ func checksum(number int) int {
 	return luhn % 10
 }
 
-type saver struct {
-	file   *os.File
-	writer *bufio.Writer
-}
-
-func (p *saver) Close() error {
-
-	return p.file.Close()
-}
-
-func NewSaver(filename string) (*saver, error) {
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND, 0777)
-	if err != nil {
-
-		return nil, err
-	}
-
-	return &saver{
-		file:   file,
-		writer: bufio.NewWriter(file),
-	}, nil
-}
-
-func (p *saver) WriteShort(text string) error {
-	json, err := json.Marshal(text)
-	if err != nil {
-
-		return err
-	}
-	if _, err := p.writer.Write(json); err != nil {
-
-		return err
-	}
-	if err := p.writer.WriteByte('\n'); err != nil {
-
-		return err
-	}
-
-	return p.writer.Flush()
-}
-
-var pathStorage = config.GetConfigPath()
-
-func Logger(text string) {
-	saver, _ := NewSaver(pathStorage)
-	defer saver.Close()
-
-	_ = saver.WriteShort(text)
-}
-
 func AccrualService(storage *storage.DB, ticker *time.Ticker, tickerChan chan bool) {
-	// saver, _ := NewSaver(pathStorage)
-	// defer saver.Close()
-
-	// _ = saver.WriteShort("in")
-
 	for {
 		select {
 		case <-tickerChan:
-
 			return
 		case <-ticker.C:
-			// Logger("in")
-
 			orders := storage.Repo.GetOrdersByStatus()
-
 			for _, order := range orders {
 				accrualURL := fmt.Sprintf("%s/api/orders/%d", config.GetConfigAccrualAddress(), order.OrderNumber)
 				response, err := http.Get(accrualURL)
 				if err != nil {
-					// Logger(fmt.Sprintf("Client could not create request: %s", err.Error()))
 					log.Printf("Client could not create request: %s", err.Error())
 				}
-
 				defer response.Body.Close()
-
 				accrual := Accrual{}
 				json.NewDecoder(response.Body).Decode(&accrual)
 				if err != nil {
-					// Logger(err.Error())
 					log.Printf("%s", err.Error())
 				}
-
-				// if err := json.Unmarshal(b, &accrual); err != nil {
-				// 	// Logger(err.Error())
-				// 	log.Printf("%s", err.Error())
-				// }
-
 				luhn, _ := strconv.Atoi(accrual.Order)
 				if order := storage.Repo.GetOrder(luhn); order.ID != 0 {
 					if order.Status != accrual.Status {
@@ -182,7 +109,6 @@ func AccrualService(storage *storage.DB, ticker *time.Ticker, tickerChan chan bo
 					}
 
 				}
-
 			}
 
 		}

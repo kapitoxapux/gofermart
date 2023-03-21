@@ -11,7 +11,6 @@ import (
 
 	"gofermart/internal/config"
 	"gofermart/internal/handler"
-
 	"gofermart/internal/service"
 	"gofermart/internal/storage"
 )
@@ -19,13 +18,10 @@ import (
 type App struct {
 	httpServer *http.Server
 	storage    *storage.DB
-	// channel    *service.Channel
 }
 
 func NewApp() *App {
 	config.SetConfig()
-	// InputCh := make(chan int)
-	// listener := service.NewListener(InputCh)
 
 	if status, _ := handler.ConnectionDBCheck(); status != http.StatusOK {
 
@@ -34,7 +30,6 @@ func NewApp() *App {
 
 	return &App{
 		storage: storage.NewDB(),
-		// channel: listener,
 	}
 }
 
@@ -56,12 +51,6 @@ func registerHTTPEndpoints(router *chi.Mux, storage storage.DB) {
 			})
 			r.Get("/withdrawals", h.WithdrawalsAction)
 		})
-
-		// r.Route("/orders", func(r chi.Router) {
-		// 	r.Route("/{number}", func(r chi.Router) {
-		// 		r.Get("/", h.AccrualAction)
-		// 	})
-		// })
 	})
 }
 
@@ -75,7 +64,7 @@ func (a *App) Run(ctx context.Context) error {
 		Handler: route,
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	tickerChan := make(chan bool)
 
 	go service.AccrualService(a.storage, ticker, tickerChan)
@@ -89,12 +78,12 @@ func (a *App) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 
-	ctx, shutdown := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, shutdown := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdown()
 
 	quit := make(chan struct{}, 1)
 	go func() {
-		time.Sleep(3 * time.Second)
+		// time.Sleep(3 * time.Second)
 		ticker.Stop()
 		tickerChan <- true
 		quit <- struct{}{}
