@@ -414,7 +414,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	withdraw := Withdraw{}
 	if err := json.Unmarshal(b, &withdraw); err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
+		http.Error(res, err.Error(), http.StatusNotImplemented)
 
 		// logger will be here
 
@@ -437,7 +437,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	} else {
-		http.Error(res, "Order not founded!", http.StatusInternalServerError) // 500 response
+		http.Error(res, "Order not founded!", http.StatusBadGateway) // 500 response
 
 		// logger will be here
 
@@ -445,7 +445,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	}
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
-		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
+		http.Error(res, "User not founded!", http.StatusServiceUnavailable) // 500 response
 
 		// logger will be here
 
@@ -458,7 +458,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	balance.CreatedAt = time.Now()
 	balance.UpdatedAt = time.Now()
 	if err := h.storage.Repo.SetWithdraw(&balance); err != nil {
-		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
+		http.Error(res, "User not founded!", http.StatusGatewayTimeout) // 500 response
 
 		// logger will be here
 
