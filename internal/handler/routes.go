@@ -352,7 +352,7 @@ func (h *Handler) BalanceAction(res http.ResponseWriter, req *http.Request) {
 	}
 
 	balance := new(Balance)
-	balance.Current = accrouls
+	balance.Current = accrouls - withdrawn
 	balance.Withdrawn = withdrawn
 
 	p, _ := json.Marshal(balance)
