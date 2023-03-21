@@ -303,7 +303,13 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	cookie, _ := req.Cookie("user")
+	if cookie == nil {
+		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
 
+		// logger will be here
+
+		return
+	}
 	luhn, _ := strconv.Atoi(string(b))
 	if !service.LuhnValid(luhn) {
 
