@@ -330,7 +330,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-	res.Header().Set("Content-Type", "application/json")
+
 	orders := []Order{}
 	list := h.storage.Repo.GetOrders(user.ID)
 	for _, obj := range list {
@@ -349,7 +349,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	p, _ := json.Marshal(orders)
-
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.WriteHeader(http.StatusOK) // 200 response
 	res.Write([]byte(p))
 }
@@ -413,7 +413,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+
 	withdraw := Withdraw{}
 	if err := json.Unmarshal(b, &withdraw); err != nil {
 		http.Error(res, err.Error(), http.StatusNotImplemented)
@@ -430,6 +430,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+
 	log.Println(luhn)
 	order := h.storage.Repo.GetOrder(luhn)
 	log.Println(order.ID)
@@ -445,15 +446,16 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 		}
 	} else {
 		log.Println("in2")
-		http.Error(res, "Order not founded!", http.StatusBadGateway) // 500 response
+		http.Error(res, "Order not founded!", http.StatusInternalServerError) // 500 response
 
 		// logger will be here
 
 		return
 	}
+
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
-		http.Error(res, "User not founded!", http.StatusServiceUnavailable) // 500 response
+		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
 
 		// logger will be here
 
@@ -466,12 +468,13 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	balance.CreatedAt = time.Now()
 	balance.UpdatedAt = time.Now()
 	if err := h.storage.Repo.SetWithdraw(&balance); err != nil {
-		http.Error(res, "User not founded!", http.StatusGatewayTimeout) // 500 response
+		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
 
 		// logger will be here
 
 		return
 	}
+	res.Header().Set("Content-Type", "application/json; charset=utf-8")
 	res.WriteHeader(http.StatusOK) // 200 response
 }
 
