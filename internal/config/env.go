@@ -17,7 +17,7 @@ var Secretkey = []byte("Diplom_Go-13_Info")
 func SetConfig() Config {
 	addr := flag.String("a", "localhost:8080", "RUN_ADDRESS")
 	base := flag.String("d", "", "ACCRUAL_SYSTEM_ADDRESS")
-	db := flag.String("r", "host=localhost port=5432 user=postgres password=tl-wn722n dbname=postgres sslmode=disable", "DATABASE_URI")
+	db := flag.String("r", "host=localhost port=5432 user=postgres password= dbname=postgres sslmode=disable", "DATABASE_URI")
 	flag.Parse()
 
 	if serverAddress := os.Getenv("RUN_ADDRESS"); serverAddress == "" {
@@ -58,5 +58,5 @@ func GetConfigDBAddress() string {
 
 func GetConfigPath() string {
 
-	return "logger.txt"
+	return "logger.log"
 }

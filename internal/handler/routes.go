@@ -1,14 +1,14 @@
 package handler
 
 import (
+	"bufio"
 	"compress/gzip"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
-
-	// "log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -62,6 +62,44 @@ type gzipWriter struct {
 	http.ResponseWriter
 	Writer io.Writer
 }
+
+type saver struct {
+	file   *os.File
+	writer *bufio.Writer
+}
+
+func NewSaver(filename string) (*saver, error) {
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0777)
+	if err != nil {
+
+		return nil, err
+	}
+
+	return &saver{
+		file:   file,
+		writer: bufio.NewWriter(file),
+	}, nil
+}
+
+func (p *saver) WriteShort(text string) error {
+	if _, err := p.writer.Write([]byte(text)); err != nil {
+
+		return err
+	}
+	if err := p.writer.WriteByte('\n'); err != nil {
+
+		return err
+	}
+
+	return p.writer.Flush()
+}
+
+func (p *saver) Close() error {
+
+	return p.file.Close()
+}
+
+var pathStorage = config.GetConfigPath()
 
 func (w gzipWriter) Write(b []byte) (int, error) {
 
@@ -148,25 +186,32 @@ func AuthMiddleware(h http.Handler) http.Handler {
 func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
+	saver, _ := NewSaver(pathStorage)
+	defer saver.Close()
+
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
-		// logger will be here
+		_ = saver.WriteShort(fmt.Sprintf("%s - ReadAll body failed: %s", time.Now().String(), err.Error()))
+
+		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
 		return
 	}
 
 	form := new(LoginForm)
 	if err := json.Unmarshal(b, &form); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest) // 400 response
+		_ = saver.WriteShort(fmt.Sprintf("%s - Unmarshal failed: %s", time.Now().String(), err.Error()))
 
-		// logger will be here
+		http.Error(res, err.Error(), http.StatusBadRequest) // 400 response
 
 		return
 	}
 
 	if model := h.storage.Repo.UserRegistered(form.Login); model.ID != 0 {
+
+		_ = saver.WriteShort(fmt.Sprintf("%s - Login %s already exist!", time.Now().String(), form.Login))
+
 		http.Error(res, "Login already exist!", http.StatusConflict) // 409 response
 
 		return
@@ -192,8 +237,14 @@ func (h *Handler) RegisterAction(res http.ResponseWriter, req *http.Request) {
 func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
+	saver, _ := NewSaver(pathStorage)
+	defer saver.Close()
+
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
+
+		_ = saver.WriteShort(fmt.Sprintf("%s - ReadAll body failed: %s", time.Now().String(), err.Error()))
+
 		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
 		return
@@ -201,6 +252,9 @@ func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 
 	form := new(LoginForm)
 	if err := json.Unmarshal(b, &form); err != nil {
+
+		_ = saver.WriteShort(fmt.Sprintf("%s - Unmarshal failed: %s", time.Now().String(), err.Error()))
+
 		http.Error(res, err.Error(), http.StatusBadRequest) // 400 response
 
 		return
@@ -219,6 +273,9 @@ func (h *Handler) LoginAction(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.WriteHeader(http.StatusOK)
 	} else {
+
+		_ = saver.WriteShort(fmt.Sprintf("%s - Wrong login/password!", time.Now().String()))
+
 		http.Error(res, "Wrong login/password!", http.StatusUnauthorized) // 401 response
 
 		return
@@ -233,37 +290,42 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
+	saver, _ := NewSaver(pathStorage)
+	defer saver.Close()
+
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
-		// logger will be here
+		_ = saver.WriteShort(fmt.Sprintf("%s - ReadAll body failed: %s", time.Now().String(), err.Error()))
+
+		http.Error(res, err.Error(), http.StatusInternalServerError) // 500 response
 
 		return
 	}
 	cookie, _ := req.Cookie("user")
-	if cookie == nil {
-		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
 
-		// logger will be here
-
-		return
-	}
 	luhn, _ := strconv.Atoi(string(b))
 	if !service.LuhnValid(luhn) {
-		http.Error(res, "Wrong order number!", http.StatusUnprocessableEntity) // 422 response
 
-		// logger will be here
+		_ = saver.WriteShort(fmt.Sprintf("%s - Wrong order number!", time.Now().String()))
+
+		http.Error(res, "Wrong order number!", http.StatusUnprocessableEntity) // 422 response
 
 		return
 	}
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if order := h.storage.Repo.GetOrder(luhn); order.ID != 0 {
 		if order.UserID == user.ID {
+
+			_ = saver.WriteShort(fmt.Sprintf("%s - Order already uploaded!", time.Now().String()))
+
 			http.Error(res, "Order already uploaded!", http.StatusOK) // 200 response
 
 			return
 		} else {
+
+			_ = saver.WriteShort(fmt.Sprintf("%s - Order already uploaded by another user!", time.Now().String()))
+
 			http.Error(res, "Order already uploaded by another user!", http.StatusConflict) // 409 response
 
 			return
@@ -284,12 +346,6 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 	cookie, _ := req.Cookie("user")
-	if cookie == nil {
-		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
-
-		return
-	}
-
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
 		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
@@ -315,25 +371,15 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 	}
 	p, _ := json.Marshal(orders)
 	res.Header().Set("Content-Type", "application/json")
-	// res.Header().Add("Accept", "application/json")
 	res.WriteHeader(http.StatusOK) // 200 response
 	res.Write([]byte(p))
 }
 
 func (h *Handler) BalanceAction(res http.ResponseWriter, req *http.Request) {
 	cookie, _ := req.Cookie("user")
-	if cookie == nil {
-		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
-
-		// logger will be here
-
-		return
-	}
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
 		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
-
-		// logger will be here
 
 		return
 	}
@@ -363,19 +409,11 @@ func (h *Handler) BalanceAction(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	cookie, _ := req.Cookie("user")
-	if cookie == nil {
-		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
 
-		// logger will be here
-
-		return
-	}
 	defer req.Body.Close()
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
-
-		// logger will be here
 
 		return
 	}
@@ -384,15 +422,11 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	if err := json.Unmarshal(b, &withdraw); err != nil {
 		http.Error(res, err.Error(), http.StatusNotImplemented)
 
-		// logger will be here
-
 		return
 	}
 	luhn, _ := strconv.Atoi(withdraw.Order)
 	if !service.LuhnValid(luhn) {
 		http.Error(res, "Wrong order number!", http.StatusUnprocessableEntity) // 422 response
-
-		// logger will be here
 
 		return
 	}
@@ -401,8 +435,6 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 		if order.Accrual < withdraw.Sum {
 			http.Error(res, "Not enouth balance!", http.StatusPaymentRequired) // 402 response
 
-			// logger will be here
-
 			return
 		}
 	}
@@ -410,8 +442,6 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
 		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
-
-		// logger will be here
 
 		return
 	}
@@ -424,8 +454,6 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	if err := h.storage.Repo.SetWithdraw(&balance); err != nil {
 		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
 
-		// logger will be here
-
 		return
 	}
 	res.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -434,18 +462,10 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) WithdrawalsAction(res http.ResponseWriter, req *http.Request) {
 	cookie, _ := req.Cookie("user")
-	if cookie == nil {
-		http.Error(res, "Unauthorized!", http.StatusUnauthorized) // 401 response
 
-		// logger will be here
-
-		return
-	}
 	user := h.storage.Repo.GetUser(cookie.Value)
 	if user == nil {
 		http.Error(res, "User not founded!", http.StatusInternalServerError) // 500 response
-
-		// logger will be here
 
 		return
 	}
@@ -457,12 +477,9 @@ func (h *Handler) WithdrawalsAction(res http.ResponseWriter, req *http.Request) 
 		processed.Sum = obj.Withdraw
 		processed.UploadAt = obj.UpdatedAt.Format(time.RFC3339)
 		processes = append(processes, *processed)
-		// h.storage.Repo.SetAccrual(obj.OrderID, "PROCESSING", 46.7)
 	}
 	if len(processes) == 0 {
 		http.Error(res, "No data!", http.StatusNoContent) // 204 response
-
-		// logger will be here
 
 		return
 	}

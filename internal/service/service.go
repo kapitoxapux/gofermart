@@ -105,9 +105,6 @@ func AccrualService(storage *storage.DB, ticker *time.Ticker, tickerChan chan bo
 				luhn, _ := strconv.Atoi(accrual.Order)
 				if order := storage.Repo.GetOrder(luhn); order.ID != 0 {
 					if order.Status != accrual.Status {
-						log.Println(luhn)
-						log.Println(accrual.Status)
-						log.Println(accrual.Accrual)
 						storage.Repo.SetAccrual(luhn, accrual.Status, accrual.Accrual)
 					}
 
