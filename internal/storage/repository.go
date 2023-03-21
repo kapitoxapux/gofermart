@@ -98,7 +98,7 @@ func (r *repository) GetUser(password string) *models.User {
 
 func (r *repository) GetOrder(id int) *models.Order {
 	model := &models.Order{}
-	if err := r.db.Limit(1).Find(model, "order_number = ?", id).Error; err != nil {
+	if err := r.db.Limit(1).Find(model, "order = ?", id).Error; err != nil {
 
 		return nil
 	}
@@ -138,7 +138,7 @@ func (r *repository) GetWithdraws(id uint64) []models.Balance {
 
 func (r *repository) SetAccrual(id int, status string, accrual float64) error {
 	order := models.Order{}
-	if err := r.db.Limit(1).Find(order, "order_number = ?", id).Error; err != nil {
+	if err := r.db.Limit(1).Find(order, "order = ?", id).Error; err != nil {
 
 		return err
 	}
