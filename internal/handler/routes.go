@@ -315,6 +315,8 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
+
 	cookie, _ := req.Cookie("user")
 	if cookie == nil {
 		// service.Logger(fmt.Sprintf("Unauthorized! Code - %d", http.StatusUnauthorized))
@@ -348,7 +350,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	p, _ := json.Marshal(orders)
-	res.Header().Set("Content-Type", "application/json")
+
 	res.WriteHeader(http.StatusOK) // 200 response
 	res.Write([]byte(p))
 }
