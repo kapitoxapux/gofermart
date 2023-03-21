@@ -307,7 +307,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 
 		h.storage.Repo.SetOrder(&order)
 		// h.channel.InputChannel <- luhn
-
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.WriteHeader(http.StatusAccepted) // 202 response
 	}
 }
