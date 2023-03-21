@@ -11,6 +11,7 @@ import (
 
 	"gofermart/internal/config"
 	"gofermart/internal/handler"
+	"gofermart/internal/service"
 	"gofermart/internal/storage"
 )
 
@@ -66,7 +67,7 @@ func (a *App) Run(ctx context.Context) error {
 	ticker := time.NewTicker(1 * time.Second)
 	tickerChan := make(chan bool)
 
-	// go service.AccrualService(a.storage, ticker, tickerChan)
+	go service.AccrualService(a.storage, ticker, tickerChan)
 
 	go func() {
 		if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
