@@ -153,7 +153,7 @@ func AccrualService(storage *storage.DB, ticker *time.Ticker, tickerChan chan bo
 			orders := storage.Repo.GetOrdersByStatus()
 
 			for _, order := range orders {
-				accrualURL := fmt.Sprintf("http://%s/api/orders/%d", config.GetConfigServerAddress(), order.OrderNumber)
+				accrualURL := fmt.Sprintf("http://%s/api/orders/%d", config.GetConfigAccrualAddress(), order.OrderNumber)
 				response, err := http.Get(accrualURL)
 				if err != nil {
 					// Logger(fmt.Sprintf("Client could not create request: %s", err.Error()))
