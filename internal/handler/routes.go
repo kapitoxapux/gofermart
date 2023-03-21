@@ -347,7 +347,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	p, _ := json.Marshal(orders)
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK) // 200 response
 	res.Write([]byte(p))
 }
