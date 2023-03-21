@@ -64,7 +64,7 @@ func (a *App) Run(ctx context.Context) error {
 		Handler: route,
 	}
 
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	tickerChan := make(chan bool)
 
 	go service.AccrualService(a.storage, ticker, tickerChan)
@@ -78,7 +78,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 
-	ctx, shutdown := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, shutdown := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdown()
 
 	quit := make(chan struct{}, 1)

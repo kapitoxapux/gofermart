@@ -137,7 +137,7 @@ func (r *repository) GetWithdraws(id uint64) []models.Balance {
 }
 
 func (r *repository) SetAccrual(id int, status string, accrual float64) error {
-	order := models.Order{}
+	order := &models.Order{}
 	if err := r.db.Limit(1).Find(order, "order = ?", id).Error; err != nil {
 
 		return err
