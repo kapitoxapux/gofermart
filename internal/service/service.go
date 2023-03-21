@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -153,19 +154,24 @@ func AccrualService(storage *storage.DB, ticker *time.Ticker, tickerChan chan bo
 				accrualURL := fmt.Sprintf("http://%s/api/orders/%d", config.GetConfigServerAddress(), order.OrderNumber)
 				response, err := http.Get(accrualURL)
 				if err != nil {
-					Logger(fmt.Sprintf("Client could not create request: %s", err.Error()))
+					// Logger(fmt.Sprintf("Client could not create request: %s", err.Error()))
+					log.Panicf("Client could not create request: %s", err.Error())
 				}
 				defer response.Body.Close()
 				b, err := io.ReadAll(response.Body)
 				if err != nil {
-					Logger(err.Error())
+					// Logger(err.Error())
+					log.Panicf("%s", err.Error())
 				}
 				accrual := Accrual{}
 				if err := json.Unmarshal(b, &accrual); err != nil {
-					Logger(err.Error())
+					// Logger(err.Error())
+					log.Panicf("%s", err.Error())
 				}
+				log.Panic(accrual)
 				luhn, _ := strconv.Atoi(accrual.Order)
 				if order := storage.Repo.GetOrder(luhn); order.ID != 0 {
+
 					if order.Status != accrual.Status {
 						storage.Repo.SetAccrual(luhn, accrual.Status, accrual.Accrual)
 					}
