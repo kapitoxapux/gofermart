@@ -36,7 +36,7 @@ type LoginForm struct {
 }
 
 type Order struct {
-	Number   int     `json:"number"`
+	Number   string  `json:"number"`
 	Status   string  `json:"status"`
 	Accrual  float64 `json:"accrual,omitempty"`
 	UploadAt string  `json:"uploaded_at"`
@@ -258,7 +258,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// res.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	defer req.Body.Close()
 	b, err := io.ReadAll(req.Body)
@@ -333,7 +333,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 	list := h.storage.Repo.GetOrders(user.ID)
 	for _, obj := range list {
 		order := new(Order)
-		order.Number = obj.OrderNumber
+		order.Number = strconv.Itoa(obj.OrderNumber)
 		order.Status = obj.Status
 		order.Accrual = obj.Accrual
 
