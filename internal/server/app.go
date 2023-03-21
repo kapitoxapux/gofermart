@@ -11,6 +11,7 @@ import (
 
 	"gofermart/internal/config"
 	"gofermart/internal/handler"
+
 	"gofermart/internal/service"
 	"gofermart/internal/storage"
 )
@@ -74,7 +75,7 @@ func (a *App) Run(ctx context.Context) error {
 		Handler: route,
 	}
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	tickerChan := make(chan bool)
 
 	go service.AccrualService(a.storage, ticker, tickerChan)

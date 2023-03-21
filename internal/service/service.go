@@ -8,7 +8,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
+
+	// "io"
 	"log"
 	"net/http"
 	"os"
@@ -162,16 +163,17 @@ func AccrualService(storage *storage.DB, ticker *time.Ticker, tickerChan chan bo
 
 				defer response.Body.Close()
 
-				b, err := io.ReadAll(response.Body)
+				accrual := Accrual{}
+				json.NewDecoder(response.Body).Decode(&accrual)
 				if err != nil {
 					// Logger(err.Error())
 					log.Printf("%s", err.Error())
 				}
-				accrual := Accrual{}
-				if err := json.Unmarshal(b, &accrual); err != nil {
-					// Logger(err.Error())
-					log.Printf("%s", err.Error())
-				}
+
+				// if err := json.Unmarshal(b, &accrual); err != nil {
+				// 	// Logger(err.Error())
+				// 	log.Printf("%s", err.Error())
+				// }
 
 				luhn, _ := strconv.Atoi(accrual.Order)
 				if order := storage.Repo.GetOrder(luhn); order.ID != 0 {
