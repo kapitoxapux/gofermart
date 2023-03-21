@@ -136,15 +136,15 @@ func (r *repository) GetWithdraws(id uint64) []models.Balance {
 	return balances
 }
 
-func (r *repository) SetAccrual(id int, status string, accrual float64) error {
-	order := &models.Order{}
-	if err := r.db.Limit(1).Find(order, "order = ?", id).Error; err != nil {
+func (r *repository) SetAccrual(orderNumber int, status string, accrual float64) error {
+	model := &models.Order{}
+	if err := r.db.Limit(1).Find(model, "order_number = ?", orderNumber).Error; err != nil {
 
 		return err
 	}
-	order.Accrual = order.Accrual + accrual
-	order.Status = status
-	r.db.Save(&order)
+	model.Accrual = model.Accrual + accrual
+	model.Status = status
+	r.db.Save(&model)
 
 	return nil
 }

@@ -468,6 +468,7 @@ func (h *Handler) WithdrawalsAction(res http.ResponseWriter, req *http.Request) 
 		processed.Sum = obj.Withdraw
 		processed.UploadAt = obj.UpdatedAt.Format(time.RFC3339)
 		processes = append(processes, *processed)
+		// h.storage.Repo.SetAccrual(obj.OrderID, "PROCESSING", 46.7)
 	}
 	if len(processes) == 0 {
 		http.Error(res, "No data!", http.StatusNoContent) // 204 response
