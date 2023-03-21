@@ -151,7 +151,7 @@ func (r *repository) SetAccrual(id int, status string, accrual float64) error {
 
 func (r *repository) GetOrdersByStatus() []models.Order {
 	orders := []models.Order{}
-	r.db.Where("status = ?", "NEW").Where("status = ?", "REGISTERED").Where("status = ?", "PROCESSING").Find(&orders)
+	r.db.Where("status IN ?", []string{"NEW", "REGISTERED", "PROCESSING"}).Find(&orders)
 
 	return orders
 }
