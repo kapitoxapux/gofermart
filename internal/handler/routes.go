@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -428,7 +429,11 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 
 		return
 	}
-	if order := h.storage.Repo.GetOrder(luhn); order.ID != 0 {
+	log.Println(luhn)
+	order := h.storage.Repo.GetOrder(luhn)
+	log.Println(order)
+	if order.ID != 0 {
+		log.Println(luhn)
 		if order.Accrual < withdraw.Sum {
 			http.Error(res, "Not enouth balance!", http.StatusPaymentRequired) // 402 response
 
@@ -437,6 +442,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	} else {
+		log.Println(luhn)
 		http.Error(res, "Order not founded!", http.StatusBadGateway) // 500 response
 
 		// logger will be here
