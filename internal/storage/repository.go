@@ -15,7 +15,7 @@ type Repository interface {
 	RegisterUser(model *models.User) error
 	LoginUser(login string, password string) *models.User
 	GetUser(password string) *models.User
-	GetOrder(login int) *models.Order
+	GetOrder(order int) *models.Order
 	SetOrder(*models.Order) error
 	GetOrders(id uint64) []models.Order
 	SetWithdraw(*models.Balance) error
@@ -96,9 +96,9 @@ func (r *repository) GetUser(password string) *models.User {
 	return model
 }
 
-func (r *repository) GetOrder(id int) *models.Order {
+func (r *repository) GetOrder(order int) *models.Order {
 	model := &models.Order{}
-	if err := r.db.Limit(1).Find(model, "order = ?", id).Error; err != nil {
+	if err := r.db.Limit(1).Find(model, "order_number = ?", order).Error; err != nil {
 
 		return nil
 	}

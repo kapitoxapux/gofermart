@@ -301,7 +301,7 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 	} else {
 		order := models.Order{}
 		order.UserID = user.ID
-		order.Order = luhn
+		order.OrderNumber = luhn
 		order.Status = "NEW"
 		order.Accrual = 0
 		order.CreatedAt = time.Now()
@@ -333,7 +333,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 	list := h.storage.Repo.GetOrders(user.ID)
 	for _, obj := range list {
 		order := new(Order)
-		order.Number = strconv.Itoa(obj.Order)
+		order.Number = strconv.Itoa(obj.OrderNumber)
 		order.Status = obj.Status
 		order.Accrual = obj.Accrual
 
