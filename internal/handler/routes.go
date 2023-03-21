@@ -315,8 +315,6 @@ func (h *Handler) PostOrdresAction(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-Type", "application/json")
-
 	cookie, _ := req.Cookie("user")
 	if cookie == nil {
 		// service.Logger(fmt.Sprintf("Unauthorized! Code - %d", http.StatusUnauthorized))
@@ -332,6 +330,7 @@ func (h *Handler) GetOrdresAction(res http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+	res.Header().Set("Content-Type", "application/json")
 	orders := []Order{}
 	list := h.storage.Repo.GetOrders(user.ID)
 	for _, obj := range list {
@@ -433,8 +432,9 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 	}
 	log.Println(luhn)
 	order := h.storage.Repo.GetOrder(luhn)
-	log.Println(order)
+	log.Println(order.ID)
 	if order.ID != 0 {
+		log.Println("in1")
 		log.Println(luhn)
 		if order.Accrual < withdraw.Sum {
 			http.Error(res, "Not enouth balance!", http.StatusPaymentRequired) // 402 response
@@ -444,7 +444,7 @@ func (h *Handler) WithdrawAction(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	} else {
-		log.Println(luhn)
+		log.Println("in2")
 		http.Error(res, "Order not founded!", http.StatusBadGateway) // 500 response
 
 		// logger will be here
